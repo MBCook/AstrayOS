@@ -32,7 +32,7 @@ clear_bss:
 	cbnz	w2, clear_bss
 	
 setup_done:
-	wfe
-	b		setup_done
+	bl		main				// Run the main function in our main.c file
+	b		setup_done			// If it ever returns (it shouldn't), try again
 	
 	
