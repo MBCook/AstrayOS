@@ -5,7 +5,7 @@ AstrayOS
 
 This is my project for writing a small operating system for a RaspberryPi. I'm initially targeting the the Pi 3 since [QEMU](https://www.qemu.org) supports that as of my start date, but I may move up to the 4.
 
-I'm not sure exactly what this project will be, but I have a couple of ideas (some may not pan out):
+I'm not sure exactly what this project will be, thus the name. But I have a couple of ideas (some may not pan out):
 
 * Absolutely will be 64-bit
 * Write more than the minimum in assembly
