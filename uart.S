@@ -59,7 +59,10 @@ uart_init:
 	// Wait at least 150 cycles (it will be more than that)
 
 	mov		x0, 150
-	bl		uart_init_wait_loop
+	
+first_loop:	
+	sub		x0, x0, 1
+	cbnz	x0, first_loop
 	
 	// Assert clock on lines 14 and 15
 	
@@ -70,7 +73,10 @@ uart_init:
 	// Wait at least 150 cycles again
 
 	mov		x0, 150
-	bl		uart_init_wait_loop
+
+second_loop:	
+	sub		x0, x0, 1
+	cbnz	x0, second_loop
 	
 	// Remove the clock line assert (x2 hasn't changed)
 
@@ -86,11 +92,6 @@ uart_init:
 	
 	ret
 
-uart_init_wait_loop:
-	sub		x0, x0, 1
-	cbnz	x0, uart_init_wait_loop
-	ret
-
 // Send a character (w0 holds the character, smashes r1 and r2)
 
 uart_send_char:
@@ -98,8 +99,8 @@ uart_send_char:
 
 uart_send_wait:	
 	ldr		w2, [x1]
-	and		w2, w2, #0x20							// Can it accept a byte?
-	cbnz	w2, uart_send_wait
+	and		w2, w2, #0x20							// Can it accept a byte? If so bit 5 is set
+	cbz		w2, uart_send_wait
 	
 	ldr		x1, =AUX_MINI_UART_IO_DATA				// Data register
 	strb	w0, [x1]								// Send it
@@ -113,8 +114,8 @@ uart_receive_char:
 
 uart_receive_wait:	
 	ldr		w2, [x1]
-	and		w2, w2, #0x01							// Does it have a byte?
-	cbnz	w2, uart_receive_wait
+	and		w2, w2, #0x01							// Does it have a byte? If so bit 0 is set
+	cbz		w2, uart_receive_wait
 	
 	ldr		x1, =AUX_MINI_UART_IO_DATA				// Data register
 	ldrb	w0, [x0]								// Load it
