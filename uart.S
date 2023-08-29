@@ -5,6 +5,7 @@
 .global uart_send_char
 .global uart_receive_char
 .global uart_send_string
+.global uart_send_word_in_hex
 
 // Start up the UART (smashes r0, r1, r2)
 
@@ -148,5 +149,43 @@ uart_send_normal:
 	cbnz	w4, uart_send_loop						// If there is more to send, loop around
 	
 uart_send_done:
+	ret
+	
+// Send a word as hex (w0 holds the word, w1 indicates if we show '0x', smashes r1, r2, r3, and r4)
+
+uart_send_word_in_hex:
+	mov		w3, w0									// Save the number
+	mov		w4, #28									// Size of bit shift needed to get a nibble + 4
+	
+	cbz		w1, send_nibble							// If w1 is 0, don't show '0x'
+	
+	stp		x29, x30, [sp, #-0x10]!					// Send '0x' first
+	mov		x29, sp
+	
+	mov		w0, '0'
+	bl		uart_send_char
+	mov		w0, 'x'
+	bl		uart_send_char	
+	
+	mov		sp, x29
+	ldp		x29, x30, [sp], #0x10
+	
+send_nibble:
+	cbz		w4, uart_send_word_in_hex_done			// If there are 0 bits left, we're done
+	
+	sub		w4, w4, 4								// Figure out the new shift size
+	ror		w0, w3, w4								// Shift down to what we want
+	and		w0, w0, #0xF							// Only keep the last nibble
+	add		w0, w0, #0x30							// Turn the number into a digit character
+	
+	stp		x29, x30, [sp, #-0x10]!					// Send the character
+	mov		x29, sp
+	bl		uart_send_char
+	mov		sp, x29
+	ldp		x29, x30, [sp], #0x10
+	
+	b		send_nibble								// Loop to the top
+
+uart_send_word_in_hex_done:
 	ret
 	

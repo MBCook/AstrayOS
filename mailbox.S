@@ -19,6 +19,7 @@ mailbox_data: .fill 36 * 4
 
 .text
 
+.global mailbox_data
 .global mailbox_call
 
 // Make a call to the defined mailbox (mailbox in w0, smashes r1, r2)

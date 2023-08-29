@@ -1,5 +1,5 @@
-#ifndef __uart_h__
-#define	__uart_h__
+#ifndef __mailbox_h__
+#define	__mailbox_h__
 
 #define MAILBOX_CHANNEL_POWER							0
 #define MAILBOX_CHANNEL_FRAMEBUFFER						1
@@ -18,6 +18,6 @@
 
 extern unsigned int mailbox_data[36];
 
-extern void mailbox_call(char channel);
+extern int mailbox_call(char channel);
 
 #endif
