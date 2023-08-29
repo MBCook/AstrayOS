@@ -120,13 +120,16 @@ uart_receive_wait:
 	ldr		x1, =AUX_MINI_UART_IO_DATA				// Data register
 	ldrb	w0, [x0]								// Load it
 	
+	cmp		w0, '\r'								// If we got a CR, swallow it and get another char
+	b.eq	uart_receive_char
+	
 	ret	
 
 // Send a pascal string (x0 holds address, four bytes for length, smashes r1, r2, r3, and r4)
 
 uart_send_string:
-	mov		x3, x0									// Save the address
-	ldr		w4, [x3], #4							// Load the length, move the address past it
+	mov		x3, x0									// Save the address (use x3 so uart_send_char can use x0)
+	ldr		w4, [x3], #4							// Load the length (w4, same reason), move address past it
 	cbz		w4, uart_send_done						// Make sure there is stuff to send
 
 uart_send_loop:
@@ -136,12 +139,23 @@ uart_send_loop:
 	b.ne	uart_send_normal
 	
 	mov		w0, #'\r'								// We found a LF, send a CR first
+	
+	stp		x29, x30, [sp, #-0x10]!					// Call uart_send_char
+	mov		x29, sp
 	bl		uart_send_char
+	mov		sp, x29
+	ldp		x29, x30, [sp], #0x10
+	
 	mov		w0, #'\n'								// Put the LF back to send
 	
 uart_send_normal:
 
-	bl		uart_send_char							// Send the char
+	stp		x29, x30, [sp, #-0x10]!					// Call uart_send_char
+	mov		x29, sp
+	bl		uart_send_char
+	mov		sp, x29
+	ldp		x29, x30, [sp], #0x10
+	
 	sub		w4, w4, 1								// Count down the number of bytes left
 	cbnz	w4, uart_send_loop						// If there is more to send, loop around
 	
