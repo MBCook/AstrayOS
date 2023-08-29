@@ -1,10 +1,7 @@
+#include "pstring.h"
+
 #ifndef __uart_h__
 #define	__uart_h__
-
-typedef struct PString {
-	unsigned int length;
-	char data[];
-} pstring;
 
 extern void uart_init();
 extern void uart_send_char(char c);
