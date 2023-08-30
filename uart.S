@@ -155,7 +155,7 @@ uart_send_done:
 
 uart_send_word_in_hex:
 	mov		w3, w0									// Save the number
-	mov		w4, #28									// Size of bit shift needed to get a nibble + 4
+	mov		w4, #32									// Size of bit shift needed to get a nibble + 4
 	
 	cbz		w1, send_nibble							// If w1 is 0, don't show '0x'
 	
@@ -173,11 +173,17 @@ uart_send_word_in_hex:
 send_nibble:
 	cbz		w4, uart_send_word_in_hex_done			// If there are 0 bits left, we're done
 	
-	sub		w4, w4, 4								// Figure out the new shift size
+	sub		w4, w4, 4								// Adjust the shift size so we can get our next nibble
 	ror		w0, w3, w4								// Shift down to what we want
 	and		w0, w0, #0xF							// Only keep the last nibble
 	add		w0, w0, #0x30							// Turn the number into a digit character
 	
+	cmp		w0, #0x39								// If the value is 0x39 or less, it's a digit, we're done
+	b.le	char_ready
+	
+	add		w0, w0, #7								// It's a letter, add 7 to get a capital hex digit
+
+char_ready:	
 	stp		x29, x30, [sp, #-0x10]!					// Send the character
 	mov		x29, sp
 	bl		uart_send_char
