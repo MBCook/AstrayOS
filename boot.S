@@ -23,13 +23,23 @@ main_core:
 	ldr		x1, =__bss_start	// Current address
 	ldr		w2, =__bss_size		// Amount of bytes to write
 
-clear_bss:	
+clear_bss_double_word:
 	cbz		w2, setup_done		// If amount left is 0, we've cleared it all
-	
-	str		xzr, [x1], #8		// Store 0 at the current address, move it forward 8 bytes
+	cmp     w2, #7              // Check if we're under 8 bytes left
+	b.lt    clear_bss_bytes
+
+	str		xzr, [x1], #8		// Store eight bytes of 0s at the current address, move it forward 8 bytes
 	sub		w2, w2, #8			// Amount left is now 8 bytes left 
 	
-	cbnz	w2, clear_bss
+	cbnz	w2, clear_bss_double_word
+
+clear_bss_bytes:
+    cbz		w2, setup_done		// If amount left is 0, we've cleared it all
+
+    strb	wzr, [x1], #1		// Store one byte of 0 at the current address, move it forward 1 byte
+    sub		w2, w2, #1			// Amount left is now 1 byte left
+
+    cbnz	w2, clear_bss_bytes
 	
 setup_done:
 	bl		main				// Run the main function in our main.c file
