@@ -31,8 +31,8 @@ void main() {
 	
 		uart_send_string(str);
 				
-		uart_send_word_in_hex(mailbox_data[6], 1);        
-		uart_send_word_in_hex(mailbox_data[5], 0);
+		uart_send_word_in_hex(mailbox_data[6], true);
+		uart_send_word_in_hex(mailbox_data[5], false);
 		
 		uart_send_char('\n');
     } else {
@@ -40,9 +40,5 @@ void main() {
 		str->length = sizeof error;
     }
 
-    int i = 0;
-    
-    while(1) {
-    	i++;
-    }
+    while (true) {};
 }
