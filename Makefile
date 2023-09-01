@@ -22,10 +22,10 @@ $(BUILD_DIR)/kernel8.img: $(O_FILES)
 clean:
 	/bin/rm $(BUILD_DIR)/* > /dev/null 2> /dev/null || true
 
-run: $(BUILD_DIR)/kernel8.img
+run: clean $(BUILD_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $(BUILD_DIR)/kernel8.img -serial null -serial stdio
 
-debug: $(BUILD_DIR)/kernel8.img
+debug: clean $(BUILD_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3b -kernel $(BUILD_DIR)/kernel8.img -s -S -serial null -serial stdio
 	
 lldb: $(BUILD_DIR)/kernel8.elf

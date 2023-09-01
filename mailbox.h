@@ -1,3 +1,5 @@
+#include "types.h"
+
 #ifndef __mailbox_h__
 #define	__mailbox_h__
 
@@ -16,8 +18,8 @@
 #define MAILBOX_TAG_GET_SERIAL							0x10004
 #define MAILBOX_TAG_LAST								0
 
-extern unsigned int mailbox_data[36];
+extern uint32 mailbox_data[36];
 
-extern int mailbox_call(char channel);
+extern bool mailbox_call(uint8 channel);
 
 #endif

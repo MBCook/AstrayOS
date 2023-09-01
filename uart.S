@@ -114,11 +114,11 @@ uart_receive_wait:
 	
 	ret	
 
-// Send a pascal string (x0 holds address, four bytes for length, smashes r1, r2, r3, and r4)
+// Send a pascal string (x0 holds address, 2 bytes for length, smashes r1, r2, r3, and r4)
 
 uart_send_string:
 	mov		x3, x0									// Save the address (use x3 so uart_send_char can use x0)
-	ldr		w4, [x3], #4							// Load the length (w4, same reason), move address past it
+	ldrh	w4, [x3], #2							// Load the length (w4 holds 16 bit length), move address past it
 	cbz		w4, uart_send_done						// Make sure there is stuff to send
 
 uart_send_loop:
