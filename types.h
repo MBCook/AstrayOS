@@ -1,6 +1,8 @@
 #ifndef __types_h__
 #define	__types_h__
 
+#define DOUBLE_WORD_BITS                64
+
 typedef unsigned char uint8;
 typedef signed char int8;
 

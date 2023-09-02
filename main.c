@@ -1,5 +1,6 @@
 #import "uart.h"
 #import "mailbox.h"
+#import "memory.h"
 
 char hello[] = {0, 0, 'H', 'e', 'l', 'l', 'o', '\n'};
 char serial[] = {0, 0, 'M', 'y', ' ', 's', 'e', 'r', 'i', 'a', 'l', ':', ' '};
@@ -7,6 +8,8 @@ char error[] = {0, 0, 'E', 'r', 'r', 'o', 'r', '?'};
 
 void main() {
 	uart_init();
+
+	init_memory_pools();
 	
 	pstring *str = (pstring *) &hello;
 	str->length = sizeof hello;
