@@ -160,22 +160,22 @@ void *allocate(uint16 size) {
 
     uint64 *bitmap;
     void *pool;
-    uint8 pool_first_bit;
+    uint8 *pool_first_bit;
 
     if (size <= SMALL_SIZE_BYTES && small_pool_first_bit != 0xFF) {
         bitmap = (uint64 *) small_memory_bitmap;
         pool = small_pool_start;
-        pool_first_bit = small_pool_first_bit;
+        pool_first_bit = &small_pool_first_bit;
         size = SMALL_SIZE_BYTES;
     } else if (size <= MEDIUM_SIZE_BYTES && medium_pool_first_bit != 0xFF) {
         bitmap = (uint64 *) medium_memory_bitmap;
         pool = medium_pool_start;
-        pool_first_bit = medium_pool_first_bit;
+        pool_first_bit = &medium_pool_first_bit;
         size = MEDIUM_SIZE_BYTES;
     } else if (size <= LARGE_SIZE_BYTES && large_pool_first_bit != 0xFF) {
         bitmap = (uint64 *) large_memory_bitmap;
         pool = large_pool_start;
-        pool_first_bit = large_pool_first_bit;
+        pool_first_bit = &large_pool_first_bit;
         size = LARGE_SIZE_BYTES;
     } else {
         panic_out_of_memory(size);
@@ -186,7 +186,7 @@ void *allocate(uint16 size) {
     uint8 double_word_with_clear_bit = 0xFF;
     uint16 clear_bit_from_left;
 
-    for (uint8 i = pool_first_bit; i < BITMAP_DOUBLE_WORDS; i++) {
+    for (uint8 i = *pool_first_bit; i < BITMAP_DOUBLE_WORDS; i++) {
         clear_bit_from_left = find_first_unset_bit_from_left(bitmap[i]);    // 0 to 63 if found, 64 if not
 
         if (clear_bit_from_left != DOUBLE_WORD_BITS) {
@@ -202,25 +202,25 @@ void *allocate(uint16 size) {
 
     // Calculate the bit number for the shift, then set it in the bitmap
 
-    uint8 bit_from_right = DOUBLE_WORD_BITS - clear_bit_from_left;      // Now 63 to 0
+    uint8 bit_from_right = DOUBLE_WORD_BITS - clear_bit_from_left - 1;      // Now 63 to 0
 
-    bitmap[double_word_with_clear_bit] |= 1 << bit_from_right;
+    bitmap[double_word_with_clear_bit] |= (1 << bit_from_right);
 
     // Either update first_pool_bit or mark that we're full
 
     if (bitmap[double_word_with_clear_bit] == ~0 && double_word_with_clear_bit == BITMAP_DOUBLE_WORDS - 1) {
         // We were in the last double word and set the last bit (~0 = all Fs)
-        pool_first_bit = 0xFF;      // Mark we're full
+        *pool_first_bit = 0xFF;     // Mark we're full
     } else {
         // Things aren't full, record this double word as where the last clear bit was seen
-        pool_first_bit = double_word_with_clear_bit;
+        *pool_first_bit = double_word_with_clear_bit;
     }
 
     // Adjust our offset from double word relative, to full pool relative
 
-    clear_bit_from_left += DOUBLE_WORD_BITS & double_word_with_clear_bit;
+    clear_bit_from_left += DOUBLE_WORD_BITS * double_word_with_clear_bit;
 
-    void *address = pool + clear_bit_from_left;
+    void *address = pool + (clear_bit_from_left * size);
 
     // Zero and return
 
