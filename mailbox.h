@@ -18,8 +18,10 @@
 #define MAILBOX_TAG_GET_SERIAL							0x10004
 #define MAILBOX_TAG_LAST								0
 
+// Permanently reserved storage for communicating with the GPU aligned on the right boundary
 extern uint32 mailbox_data[36];
 
+// Makes a call to the given channel with the data in mailbox_data, returns true for success
 extern bool mailbox_call(uint8 channel);
 
 #endif

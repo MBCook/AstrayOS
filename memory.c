@@ -100,14 +100,14 @@ static uint8 find_first_unset_bit_from_left(uint64 double_word) {
     return (uint8) result + 1;
 }
 
-static void zero_memory_by_eight(void *start, uint16 size_divisble_by_8) {
+static void zero_memory_by_eight(void *ptr, uint16 size_divisble_by_8) {
     for (uint16 i = 0; i < size_divisble_by_8 / 8; i++)
-        ((uint64 *) start)[i] = 0;
+        ((uint64 *) ptr)[i] = 0;
 }
 
-static void zero_memory_by_one(void *start, uint16 size) {
+static void zero_memory_by_one(void *ptr, uint16 size) {
     for (uint16 i = 0; i < size; i++)
-        ((uint8 *) start)[i] = 0;
+        ((uint8 *) ptr)[i] = 0;
 }
 
 static void copy_memory_by_eight(void *src, void *dest, uint16 size_divisble_by_8) {
@@ -130,12 +130,12 @@ void init_memory_pools() {
     zero_memory((void *) large_memory_bitmap, BITMAP_BYTES);
 }
 
-void zero_memory(void *start, uint16 size) {
+void zero_memory(void *ptr, uint16 size) {
     uint64 remainder = size % 8;
     uint64 main_chunk = size - remainder;
 
-    zero_memory_by_eight(start, main_chunk);
-    zero_memory_by_one((void *) ((uint64) start + main_chunk), remainder);
+    zero_memory_by_eight(ptr, main_chunk);
+    zero_memory_by_one((void *) ((uint64) ptr + main_chunk), remainder);
 }
 
 void copy_memory(void *src, void *dest, uint16 size) {

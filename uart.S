@@ -157,7 +157,6 @@ post_echo:
 
 uart_receive_string_done:
     strh    w5, [x3]                                // Update the size of the struct
-    mov     w0, w5                                  // Setup how many bytes were used as the return value
     ret
 
 // Send a pascal string (x0 holds address, 2 bytes for length, smashes r1, r2, r3, and r4)

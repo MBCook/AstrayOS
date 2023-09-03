@@ -59,7 +59,7 @@ void main() {
     while (true) {
         // Get a string up to 60 characters, echoing characters as they type
 
-        uint16 used_bytes = uart_receive_string(str, 60, true);
+        uart_receive_string(str, 60, true);
 
         uart_send_char('\n');
 
@@ -73,7 +73,7 @@ void main() {
 
         uart_send_string(used);
 
-        uart_send_word_in_hex(used_bytes, true);
+        uart_send_word_in_hex(used->size, true);
 
         uart_send_char('\n');
     }
