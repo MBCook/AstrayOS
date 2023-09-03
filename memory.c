@@ -82,7 +82,7 @@ static uint8 find_first_unset_bit_from_left(uint64 double_word) {
     // CLS counts how many bits match the high bit, so we need to check the high bit is set
     // If not then that means the first unset bit is the highest bit, 0 from left
 
-    if (double_word && 0x8000000000000000 == 0)
+    if ((double_word & 0x8000000000000000) == 0)
         return 0;
 
     uint64 result;
@@ -91,7 +91,7 @@ static uint8 find_first_unset_bit_from_left(uint64 double_word) {
             : "=r" (result)
             : "r" (double_word));
 
-    // CLS counts bits after the sign bit, so we have to add one to get the next bit after the last set one
+    // CLS counts bits after the sign bit, so this will return 1 to 64
 
     return (uint8) result + 1;
 }

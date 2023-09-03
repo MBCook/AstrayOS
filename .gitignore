@@ -3,3 +3,6 @@
 *.img
 /AstrayOS.iml
 /.idea/
+test/*.dSYM
+test/memtest
+
