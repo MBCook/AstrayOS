@@ -6,5 +6,7 @@
 void free(void *ptr);
 void *allocate(uint16 size);
 void init_memory_pools();
+void zero_memory(void *start, uint16 size);
+void copy_memory(void *src, void *dest, uint16 size);
 
 #endif

@@ -50,6 +50,8 @@ static void * const large_pool_start = SAFE_MEMORY_START + BITMAP_TOTAL_SIZE * 3
 // Local functions
 
 static __attribute__((__noreturn__)) void panic_out_of_memory(uint16 size) {
+    // This is hardcoded so we don't have to allocate memory
+
     char error[] = {0, 0, 'N', 'o', ' ', 'm', 'e', 'm', 'o', 'r', 'y', ' ',
                             'o', 'f', ' ', 's', 'i', 'z' ,'e', ' ', 'l', 'e', 'f', 't', ' '};
 
@@ -64,6 +66,8 @@ static __attribute__((__noreturn__)) void panic_out_of_memory(uint16 size) {
 }
 
 static __attribute__((__noreturn__)) void panic_bad_pointer(void *ptr) {
+    // This is hardcoded so we don't have to allocate memory
+
     char error[] = {0, 0, 'I', 'n', 'v', 'a', 'l', 'i', 'd', ' ',
                             'p', 'o', 'o', 'l', ' ', 'p', 'o', 'i', 'n', 't', 'e', 'r', ' '};
 
@@ -96,9 +100,24 @@ static uint8 find_first_unset_bit_from_left(uint64 double_word) {
     return (uint8) result + 1;
 }
 
-static void zero_memory(void *start, uint16 size_divisble_by_8) {
+static void zero_memory_by_eight(void *start, uint16 size_divisble_by_8) {
     for (uint16 i = 0; i < size_divisble_by_8 / 8; i++)
         ((uint64 *) start)[i] = 0;
+}
+
+static void zero_memory_by_one(void *start, uint16 size) {
+    for (uint16 i = 0; i < size; i++)
+        ((uint8 *) start)[i] = 0;
+}
+
+static void copy_memory_by_eight(void *src, void *dest, uint16 size_divisble_by_8) {
+    for (uint16 i = 0; i < size_divisble_by_8 / 8; i++)
+        ((uint64 *) dest)[i] = ((uint64 *) src)[i];
+}
+
+static void copy_memory_by_one(void *src, void *dest, uint16 size) {
+    for (uint16 i = 0; i < size; i++)
+        ((uint8 *) dest)[i] = ((uint8 *) src)[i];
 }
 
 // Functions
@@ -109,6 +128,22 @@ void init_memory_pools() {
     zero_memory((void *) small_memory_bitmap, BITMAP_BYTES);
     zero_memory((void *) medium_memory_bitmap, BITMAP_BYTES);
     zero_memory((void *) large_memory_bitmap, BITMAP_BYTES);
+}
+
+void zero_memory(void *start, uint16 size) {
+    uint64 remainder = size % 8;
+    uint64 main_chunk = size - remainder;
+
+    zero_memory_by_eight(start, main_chunk);
+    zero_memory_by_one((void *) ((uint64) start + main_chunk), remainder);
+}
+
+void copy_memory(void *src, void *dest, uint16 size) {
+    uint64 remainder = size % 8;
+    uint64 main_chunk = size - remainder;
+
+    copy_memory_by_eight(src, dest, main_chunk);
+    copy_memory_by_one((void *) ((uint64) src + main_chunk), (void *) ((uint64) dest + main_chunk), remainder);
 }
 
 void free(void *ptr) {
