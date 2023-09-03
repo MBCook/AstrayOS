@@ -107,7 +107,7 @@ uart_receive_wait:
 	cbz		w2, uart_receive_wait
 	
 	ldr		x1, =AUX_MINI_UART_IO_DATA				// Data register
-	ldrb	w0, [x0]								// Load it
+	ldrb	w0, [x1]								// Load it
 	
 	cmp		w0, '\r'								// If we got a CR, swallow it and get another char
 	b.eq	uart_receive_char
