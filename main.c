@@ -52,8 +52,9 @@ void main() {
 
     // Echo back strings they type
 
-    str = empty_pstring(60);
     str = empty_string(60);
+
+    string *used = string_from_cstring("Bytes used: ");
 
     while (true) {
         // Get a string up to 60 characters, echoing characters as they type
@@ -68,7 +69,9 @@ void main() {
 
         uart_send_char('\n');
 
-        // Print out how many characters they typed in hex
+        // Print out how many bytes were used (characters + 2)
+
+        uart_send_string(used);
 
         uart_send_word_in_hex(used_bytes, true);
 

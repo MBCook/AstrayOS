@@ -156,7 +156,7 @@ post_echo:
     b.ne    uart_receive_get_char
 
 uart_receive_string_done:
-    strh    w5, [x3]                                // Update the size in the struct
+    strh    w5, [x3]                                // Update the size of the struct
     mov     w0, w5                                  // Setup how many bytes were used as the return value
     ret
 
@@ -164,26 +164,12 @@ uart_receive_string_done:
 
 uart_send_string:
 	mov		x3, x0									// Save the address (use x3 so uart_send_char can use x0)
-	ldrh	w4, [x3], #2							// Load the length (w4 holds 16 bit length), move address past it
+	ldrh	w4, [x3], #2							// Load the size (first 16 bits w4 points at), move address past it
+	sub     w4, w4, #2                              // Subtract the two bytes used by the size
 	cbz		w4, uart_send_done						// Make sure there is stuff to send
 
 uart_send_loop:
 	ldrb	w0, [x3], #1							// Load up the next byte to send then increment x3
-	
-	cmp		w0, #'\n'								// If we don't find a LF, send it as normal
-	b.ne	uart_send_normal
-	
-	mov		w0, #'\r'								// We found a LF, send a CR first
-	
-	stp		x29, x30, [sp, #-0x10]!					// Call uart_send_char
-	mov		x29, sp
-	bl		uart_send_char
-	mov		sp, x29
-	ldp		x29, x30, [sp], #0x10
-	
-	mov		w0, #'\n'								// Put the LF back to send
-	
-uart_send_normal:
 
 	stp		x29, x30, [sp, #-0x10]!					// Call uart_send_char
 	mov		x29, sp
