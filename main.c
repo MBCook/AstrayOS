@@ -16,7 +16,8 @@ void main() {
 
     free((void **) &str);
 
-	// get the board's unique serial number with a mailbox call
+	// Get the board's serial number with a mailbox call
+
     mailbox_data[0] = 8 * 4;					// Length of message in bytes (8 ints, which are 4 bytes each)
     mailbox_data[1] = MAILBOX_REQUEST;			// We're sending a request
 
@@ -48,6 +49,30 @@ void main() {
     }
 
     uart_send_char('\n');
+
+    // Echo back strings they type
+
+    str = empty_pstring(60);
+
+    while (true) {
+        // Get a string up to 60 characters, echoing characters as they type
+
+        uint16 used_bytes = uart_receive_string(str, 60, true);
+
+        uart_send_char('\n');
+
+        // Echo it back
+
+        uart_send_string(str);
+
+        uart_send_char('\n');
+
+        // Print out how many characters they typed in hex
+
+        uart_send_word_in_hex(used_bytes, true);
+
+        uart_send_char('\n');
+    }
 
     while (true) {};
 }

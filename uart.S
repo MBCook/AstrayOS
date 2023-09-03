@@ -4,6 +4,7 @@
 .global uart_init
 .global uart_send_char
 .global uart_receive_char
+.global uart_receive_string
 .global uart_send_string
 .global uart_send_word_in_hex
 
@@ -110,6 +111,54 @@ uart_receive_wait:
 	ldrb	w0, [x1]								// Load it
 
 	ret	
+
+// Receive a string until we get a \n or \r (x0 holds struct, x1 is max string length, w2 is echo on, smashes r2 - r6)
+// Returns bytes used in x0
+
+uart_receive_string:
+    mov     x3, x0                                  // Save the address of the struct
+    mov     w4, w1                                  // Save the max size allocated for us to use
+    add     w4, w4, #2                              // Add the size of the size field
+    mov     w5, #2                                  // How many bytes of the structure we've used so far
+    mov     w6, w2                                  // Save if we need to echo characters
+
+uart_receive_get_char:
+    stp		x29, x30, [sp, #-0x10]!					// Call uart_send_char
+    mov		x29, sp
+    bl		uart_receive_char
+    mov		sp, x29
+    ldp		x29, x30, [sp], #0x10
+
+    cbz     w6, post_echo                           // Check if echo is on
+
+    stp		x29, x30, [sp, #-0x10]!					// They asked for echo
+    mov		x29, sp
+    bl		uart_send_char
+    mov		sp, x29
+    ldp		x29, x30, [sp], #0x10
+
+post_echo:
+    // Return if found an end of line character
+
+    cmp     w0, '\n'
+    b.eq    uart_receive_string_done
+    cmp     w0, '\r'
+    b.eq    uart_receive_string_done
+
+    // Store the character, increment how many bytes we've used
+
+    strb    w0, [x3, w5, UXTW]                      // Store at x3 + w5 unsigned bytes
+    add     w5, w5, #1
+
+    // Ensure we have space left
+
+    cmp     w4, w5
+    b.ne    uart_receive_get_char
+
+uart_receive_string_done:
+    strh    w5, [x3]                                // Update the size in the struct
+    mov     w0, w5                                  // Setup how many bytes were used as the return value
+    ret
 
 // Send a pascal string (x0 holds address, 2 bytes for length, smashes r1, r2, r3, and r4)
 
