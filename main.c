@@ -1,7 +1,7 @@
 #import "uart.h"
 #import "mailbox.h"
 #import "memory.h"
-#import "pstring.h"
+#import "string.h"
 
 void main() {
 	uart_init();
@@ -10,7 +10,7 @@ void main() {
 
 	init_memory_pools();
 
-	pstring *str = pstring_from_cstring("Hello!\n");
+	string *str = string_from_cstring("Hello!\n");
 
 	uart_send_string(str);
 
@@ -30,7 +30,7 @@ void main() {
     mailbox_data[7] = MAILBOX_TAG_LAST;			// We're done sending tags
 
 	if (mailbox_call(MAILBOX_CHANNEL_PROPERTY_TAGS)) {
-	    str = pstring_from_cstring("Serial number is: ");
+	    str = string_from_cstring("Serial number is: ");
 
         uart_send_string(str);
 
@@ -41,7 +41,7 @@ void main() {
 
 		uart_send_char('\n');
     } else {
-		str = pstring_from_cstring("Unable to get the serial number.");
+		str = string_from_cstring("Unable to get the serial number.");
 
         uart_send_string(str);
 
@@ -53,6 +53,7 @@ void main() {
     // Echo back strings they type
 
     str = empty_pstring(60);
+    str = empty_string(60);
 
     while (true) {
         // Get a string up to 60 characters, echoing characters as they type

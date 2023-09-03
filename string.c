@@ -5,20 +5,20 @@
 // Local functions
 
 static __attribute__((__noreturn__)) void panic_string_too_big() {
-    uart_send_string(pstring_from_cstring("Requested string too big"));
+    uart_send_string(string_from_cstring("Requested string too big"));
 
     while (true) {};
 }
 
 static __attribute__((__noreturn__)) void panic_string_out_of_range() {
-    uart_send_string(pstring_from_cstring("Destination string wasn't big enough"));
+    uart_send_string(string_from_cstring("Destination string wasn't big enough"));
 
     while (true) {};
 }
 
 // Functions
 
-pstring *empty_pstring(uint16 length) {
+string *empty_string(uint16 length) {
     // Ensure it will fit in our allocation budget
 
     if (length >= 0xFFFF - 2)
@@ -27,10 +27,14 @@ pstring *empty_pstring(uint16 length) {
     // Returns an empty string with a length of 0.
     // It's the caller's responsibility to remember the max size.
 
-    return (pstring *) allocate(length + 2);
+    string *result = allocate(length + 2);
+
+    result->size = 2;       // Always starts at 2 for the two bytes used by the size field
+
+    return result;
 }
 
-void expand_pstring(pstring **str, uint16 length) {
+void expand_string(string **str, uint16 length) {
     // The struct only keep track of how long the current contents are, not how much is allocated.
     // If the current contents are long enough, there is no need to allocate more memory.
 
@@ -40,11 +44,11 @@ void expand_pstring(pstring **str, uint16 length) {
     // We're assuming the existing memory allocation wasn't big enough to hold length.
     // If it was big enough then we're wasting cycles.
 
-    pstring *longer = empty_pstring(length);
+    string *longer = empty_string(length);
 
     longer->size = (*str)->size;
 
-    update_pstring(*str, 0, length, longer, 0);
+    copy_string(*str, 0, length, longer, 0);
 
     // Free the existing string, we don't need it any more, update the str pointer
 
@@ -53,7 +57,7 @@ void expand_pstring(pstring **str, uint16 length) {
     *str = longer;
 }
 
-pstring *pstring_from_cstring(char data[]) {
+string *string_from_cstring(char data[]) {
     // Figure out how long the C string is
 
     uint32 size = 0;
@@ -61,7 +65,7 @@ pstring *pstring_from_cstring(char data[]) {
     while (data[size] != 0x00)
         size++;
 
-    // Size = length of string, add two to cover the size field in the pstring struct
+    // Size = length of string, add two to cover the size field in the string struct
 
     size += 2;
 
@@ -70,7 +74,7 @@ pstring *pstring_from_cstring(char data[]) {
     if (size >= 0xFFFF)
         panic_string_too_big();
 
-    pstring *result = allocate(size);
+    string *result = allocate(size);
 
     result->size = size;
 
@@ -81,7 +85,7 @@ pstring *pstring_from_cstring(char data[]) {
     return result;
 }
 
-pstring *append_pstrings(pstring *one, pstring *two) {
+string *append_strings(string *one, string *two) {
     // Figure out how big things will be. Total sizes of the two minus two.
     // One and two both have 2 bytes to hold a size, but that's two more than we'll need.
 
@@ -94,19 +98,19 @@ pstring *append_pstrings(pstring *one, pstring *two) {
 
     // Allocate, setup, and copy
 
-    pstring *result = allocate(size);
+    string *result = allocate(size);
 
     result->size = size;
 
     // Copy the string data (size field - 2 = string length)
 
-    update_pstring(one, 0, one->size - 2, result, 0);
-    update_pstring(two, 0, two->size - 2, result, one->size - 2);
+    copy_string(one, 0, one->size - 2, result, 0);
+    copy_string(two, 0, two->size - 2, result, one->size - 2);
 
     return result;
 }
 
-pstring *sub_pstring(pstring *src, uint16 start, uint16 length) {
+string *substring(string *src, uint16 start, uint16 length) {
     // Ensure it will fit in our allocation budget
 
     if (length >= 0xFFFF - 2)
@@ -114,16 +118,16 @@ pstring *sub_pstring(pstring *src, uint16 start, uint16 length) {
 
     // Allocate it and copy the requsted data in
 
-    pstring *result = empty_pstring(length + 2);
+    string *result = empty_string(length + 2);
 
     result->size = length + 2;
 
-    update_pstring(src, start, length, result, 0);
+    copy_string(src, start, length, result, 0);
 
     return result;
 }
 
-void update_pstring(pstring *src, uint16 src_start, uint16 length, pstring *dest, uint16 dest_start) {
+void copy_string(string *src, uint16 src_start, uint16 length, string *dest, uint16 dest_start) {
     // Make sure it will fit
 
     if ((uint32) dest_start + (uint32) length > dest->size - 2)
