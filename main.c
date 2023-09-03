@@ -14,7 +14,7 @@ void main() {
 
 	uart_send_string(str);
 
-    free(str);
+    free((void **) &str);
 
 	// get the board's unique serial number with a mailbox call
     mailbox_data[0] = 8 * 4;					// Length of message in bytes (8 ints, which are 4 bytes each)
@@ -33,7 +33,7 @@ void main() {
 
         uart_send_string(str);
 
-        free(str);
+        free((void **) &str);
 
 		uart_send_word_in_hex(mailbox_data[6], true);
 		uart_send_word_in_hex(mailbox_data[5], false);
@@ -44,7 +44,7 @@ void main() {
 
         uart_send_string(str);
 
-        free(str);
+        free((void **) &str);
     }
 
     uart_send_char('\n');

@@ -146,7 +146,12 @@ void copy_memory(void *src, void *dest, uint16 size) {
     copy_memory_by_one((void *) ((uint64) src + main_chunk), (void *) ((uint64) dest + main_chunk), remainder);
 }
 
-void free(void *ptr) {
+void free(void **ptr) {
+    // Freeing null is allowed and is a no-op
+
+    if (*ptr == null)
+        return;
+
     // Figure out which pool we're in
 
     uint64 *bitmap;
@@ -154,23 +159,23 @@ void free(void *ptr) {
     uint16 size;
     uint8 *first_bit;
 
-    if (ptr >= small_pool_start && ptr < medium_pool_start) {
-        offset = (void *) (ptr - small_pool_start);
+    if (*ptr >= small_pool_start && *ptr < medium_pool_start) {
+        offset = (void *) (*ptr - small_pool_start);
         bitmap = (void *) small_memory_bitmap;
         size = SMALL_SIZE_BYTES;
         first_bit = &small_pool_first_bit;
-    } else if (ptr >= medium_pool_start && ptr < large_pool_start) {
-        offset = (void *) (ptr - medium_pool_start);
+    } else if (*ptr >= medium_pool_start && *ptr < large_pool_start) {
+        offset = (void *) (*ptr - medium_pool_start);
         bitmap = (void *) medium_memory_bitmap;
         size = MEDIUM_SIZE_BYTES;
         first_bit = &medium_pool_first_bit;
-    } else if (ptr >= large_pool_start && ptr < large_pool_start + LARGE_SIZE_TOTAL) {
-        offset = (void *) (ptr - large_pool_start);
+    } else if (*ptr >= large_pool_start && *ptr < large_pool_start + LARGE_SIZE_TOTAL) {
+        offset = (void *) (*ptr - large_pool_start);
         bitmap = (void *) large_memory_bitmap;
         size = LARGE_SIZE_BYTES;
         first_bit = &large_pool_first_bit;
     } else {
-       panic_bad_pointer(ptr);
+       panic_bad_pointer(*ptr);
     }
 
     // Figure out which bit of the bitmap the page was, zero to the right
@@ -188,6 +193,10 @@ void free(void *ptr) {
     uint8 bit_from_left = DOUBLE_WORD_BITS - 1 - bit_in_double_word;    // Now 63 to 0
 
     bitmap[double_word_with_bit] &= ~(1 << bit_from_left);
+
+    // Now zero out the original pointer
+
+    *ptr = null;
 }
 
 void *allocate(uint16 size) {

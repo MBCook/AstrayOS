@@ -30,6 +30,29 @@ pstring *empty_pstring(uint16 length) {
     return (pstring *) allocate(length + 2);
 }
 
+void expand_pstring(pstring **str, uint16 length) {
+    // The struct only keep track of how long the current contents are, not how much is allocated.
+    // If the current contents are long enough, there is no need to allocate more memory.
+
+    if (length <= (*str)->size - 2)
+        return;
+
+    // We're assuming the existing memory allocation wasn't big enough to hold length.
+    // If it was big enough then we're wasting cycles.
+
+    pstring *longer = empty_pstring(length);
+
+    longer->size = (*str)->size;
+
+    update_pstring(*str, 0, length, longer, 0);
+
+    // Free the existing string, we don't need it any more, update the str pointer
+
+    free((void **) str);
+
+    *str = longer;
+}
+
 pstring *pstring_from_cstring(char data[]) {
     // Figure out how long the C string is
 

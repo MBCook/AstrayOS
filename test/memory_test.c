@@ -24,15 +24,15 @@ uint8 small_pool_first_bit = 0;     // The first double word a free page was las
 uint8 medium_pool_first_bit = 0;    // 0xFF means we're full
 uint8 large_pool_first_bit = 0;
 
-uint32 * small_memory_bitmap = 0;
-uint32 * medium_memory_bitmap = 0;
-uint32 * large_memory_bitmap = 0;
+uint32 * small_memory_bitmap = null;
+uint32 * medium_memory_bitmap = null;
+uint32 * large_memory_bitmap = null;
 
-void * small_pool_start = 0;
-void * medium_pool_start = 0;
-void * large_pool_start = 0;
+void * small_pool_start = null;
+void * medium_pool_start = null;
+void * large_pool_start = null;
 
-void *from_malloc = 0;
+void *from_malloc = null;
 
 void print_binary_int(uint32 num) {
     for (int i = 31; i >= 0; i--) {
@@ -211,10 +211,10 @@ void *allocate(uint16 size) {
 //////
 
 void test_allocations_from_empty() {
-    void *one = 0;
-    void *two = 0;
-    void *three = 0;
-    void *four = 0;
+    void *one = null;
+    void *two = null;
+    void *three = null;
+    void *four = null;
 
     printf("\nPrinting initial pool state\n");
 
@@ -248,7 +248,7 @@ void test_allocations_from_empty() {
 
     my_free(one);
 
-    one = 0;
+    one = null;
 
     print_pool_allocations(small_memory_bitmap, small_pool_first_bit);
 
@@ -264,7 +264,7 @@ void test_allocations_from_empty() {
 
     my_free(two);
 
-    two = 0;
+    two = null;
 
     print_pool_allocations(small_memory_bitmap, small_pool_first_bit);
 
@@ -286,10 +286,10 @@ void test_allocations_from_empty() {
 }
 
 void test_allocations_crossing_boundary() {
-    void *one = 0;
-    void *two = 0;
-    void *three = 0;
-    void *four = 0;
+    void *one = null;
+    void *two = null;
+    void *three = null;
+    void *four = null;
 
     printf("\nPrinting initial pool state\n");
 
@@ -331,7 +331,7 @@ void test_allocations_crossing_boundary() {
 
     my_free(one);
 
-    one = 0;
+    one = null;
 
     print_pool_allocations(small_memory_bitmap, small_pool_first_bit);
 
@@ -347,7 +347,7 @@ void test_allocations_crossing_boundary() {
 
     my_free(two);
 
-    two = 0;
+    two = null;
 
     print_pool_allocations(small_memory_bitmap, small_pool_first_bit);
 
@@ -369,10 +369,10 @@ void test_allocations_crossing_boundary() {
 }
 
 void test_allocations_crossing_sizes() {
-    void *one = 0;
-    void *two = 0;
-    void *three = 0;
-    void *four = 0;
+    void *one = null;
+    void *two = null;
+    void *three = null;
+    void *four = null;
 
     printf("\nPrinting initial pool state\n");
 
@@ -422,7 +422,7 @@ void test_allocations_crossing_sizes() {
 
     my_free(one);
 
-    one = 0;
+    one = null;
 
     print_pool_allocations(small_memory_bitmap, small_pool_first_bit);
     print_pool_allocations(medium_memory_bitmap, medium_pool_first_bit);
@@ -440,7 +440,7 @@ void test_allocations_crossing_sizes() {
 
     my_free(two);
 
-    two = 0;
+    two = null;
 
     print_pool_allocations(small_memory_bitmap, small_pool_first_bit);
     print_pool_allocations(medium_memory_bitmap, medium_pool_first_bit);
@@ -520,7 +520,7 @@ int main() {
 
     from_malloc = malloc(AMOUNT_TO_ALLOCATE);
 
-    if (from_malloc == 0) {
+    if (from_malloc == null) {
         printf("Can't get memory\n");
         exit(1);
     }
