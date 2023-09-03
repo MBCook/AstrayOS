@@ -56,7 +56,7 @@ static __attribute__((__noreturn__)) void panic_out_of_memory(uint16 size) {
                             'o', 'f', ' ', 's', 'i', 'z' ,'e', ' ', 'l', 'e', 'f', 't', ' '};
 
     pstring *s = (pstring *) &error;
-    s->length = sizeof(error);
+    s->size = sizeof(error);
 
     uart_send_string(s);
 
@@ -72,7 +72,7 @@ static __attribute__((__noreturn__)) void panic_bad_pointer(void *ptr) {
                             'p', 'o', 'o', 'l', ' ', 'p', 'o', 'i', 'n', 't', 'e', 'r', ' '};
 
     pstring *s = (pstring *) &error;
-    s->length = sizeof(error);
+    s->size = sizeof(error);
 
     uart_send_string(s);
 

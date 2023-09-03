@@ -10,6 +10,12 @@ static __attribute__((__noreturn__)) void panic_string_too_big() {
     while (true) {};
 }
 
+static __attribute__((__noreturn__)) void panic_string_out_of_range() {
+    uart_send_string(pstring_from_cstring("Destination string wasn't big enough"));
+
+    while (true) {};
+}
+
 // Functions
 
 pstring *empty_pstring(uint16 length) {
@@ -27,52 +33,80 @@ pstring *empty_pstring(uint16 length) {
 pstring *pstring_from_cstring(char data[]) {
     // Figure out how long the C string is
 
-    uint16 length = 0;
+    uint32 size = 0;
 
-    while (data[length] != 0x00)
-        length++;
+    while (data[size] != 0x00)
+        size++;
+
+    // Size = length of string, add two to cover the size field in the pstring struct
+
+    size += 2;
 
     // Ensure it will fit in our allocation budget
 
-    if (length >= 0xFFFF - 2)
+    if (size >= 0xFFFF)
         panic_string_too_big();
 
-    // Add 2 to the length so it's the final size of the structure
+    pstring *result = allocate(size);
 
-    length += 2;
+    result->size = size;
 
-    pstring *result = allocate(length);
+    // Copy the string's bytes (we didn't count the terminating null)
 
-    result->length = length;
-
-    // Copy the string data minus (our length does not include the null byte)
-
-    copy_memory((void *) data, (void *) &result->data, length - 2);
+    copy_memory((void *) data, (void *) &result->data, size - 2);
 
     return result;
 }
 
 pstring *append_pstrings(pstring *one, pstring *two) {
-    // Figure out how things will be. Total sizes of the two minus two.
-    // One and two both have 2 bytes to hold a length, but that's two more than we'll need.
+    // Figure out how big things will be. Total sizes of the two minus two.
+    // One and two both have 2 bytes to hold a size, but that's two more than we'll need.
 
-    uint32 length = (uint32) one->length + (uint32) two->length - 2;
+    uint32 size = (uint32) one->size + (uint32) two->size - 2;
 
     // Ensure it will fit in our allocation budget
 
-    if (length >= 0x0000FFFF)
+    if (size >= 0x0000FFFF)
         panic_string_too_big();
 
     // Allocate, setup, and copy
 
-    pstring *result = allocate(length);
+    pstring *result = allocate(size);
 
-    result->length = length;
+    result->size = size;
 
-    // Copy the string data minus (our length does not include the null byte)
+    // Copy the string data (size field - 2 = string length)
 
-    copy_memory((void *) ((uint64) one + 2), (void *) ((uint64) &result->data), one->length - 2);
-    copy_memory((void *) ((uint64) two + 2), (void *) (((uint64) &result->data) + one->length - 2), two->length - 2);
+    update_pstring(one, 0, one->size - 2, result, 0);
+    update_pstring(two, 0, two->size - 2, result, one->size - 2);
 
     return result;
+}
+
+pstring *sub_pstring(pstring *src, uint16 start, uint16 length) {
+    // Ensure it will fit in our allocation budget
+
+    if (length >= 0xFFFF - 2)
+        panic_string_too_big();
+
+    // Allocate it and copy the requsted data in
+
+    pstring *result = empty_pstring(length + 2);
+
+    result->size = length + 2;
+
+    update_pstring(src, start, length, result, 0);
+
+    return result;
+}
+
+void update_pstring(pstring *src, uint16 src_start, uint16 length, pstring *dest, uint16 dest_start) {
+    // Make sure it will fit
+
+    if ((uint32) dest_start + (uint32) length > dest->size - 2)
+        panic_string_out_of_range();
+
+    // Copy the requested data across
+
+    copy_memory((void *) ((uint64) &src->data + src_start), (void *) ((uint64) &dest->data + dest_start), length);
 }
