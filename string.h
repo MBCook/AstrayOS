@@ -29,4 +29,18 @@ string *substring(string *src, uint16 start, uint16 length);
 // Copies selected bytes from one string to the other starting at the given destination position
 void copy_string(string *src, uint16 src_start, uint16 length, string *dest, uint16 dest_start);
 
+// Create a new string from the given format string and arguments
+//
+// We can't tell a positive 32-bit int with the high bit set from a negative 32-bit int
+// with the way varargs passes stuff to us, so to display a negative number in a 32 bit type,
+// we must consider the %d specifier to be for 32-bit or smaller numbers only.
+//
+// We support:  c - character
+//              d - integer, 32 bits or less
+//              D - integer, 64 bits
+//              u - unsigned integer, any size
+//              x - hex, any size
+//              b - binary, any size
+string *format_string(string *format, ...);
+
 #endif

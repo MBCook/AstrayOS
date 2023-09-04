@@ -17,14 +17,14 @@
 
 // We'll let our OS allocate things in three sizes: 64 bytes, 1024 bytes, and 16k bytes
 
-#define SMALL_SIZE_BYTES            64
-#define SMALL_SIZE_TOTAL            (64 * BITMAP_TOTAL_SIZE)        // 0x00010000 - 65,536 bytes
+#define SMALL_SIZE_BYTES            MINIMUM_ALLOCATION_BYTES
+#define SMALL_SIZE_TOTAL            (SMALL_SIZE_BYTES * BITMAP_TOTAL_SIZE)      // 0x00010000 - 65,536 bytes
 
 #define MEDIUM_SIZE_BYTES           1024
-#define MEDIUM_SIZE_TOTAL           (1024 * BITMAP_TOTAL_SIZE)      // 0x00100000 - 1,048,576 bytes
+#define MEDIUM_SIZE_TOTAL           (MEDIUM_SIZE_BYTES * BITMAP_TOTAL_SIZE)     // 0x00100000 - 1,048,576 bytes
 
 #define LARGE_SIZE_BYTES            16384
-#define LARGE_SIZE_TOTAL            (16384 * BITMAP_TOTAL_SIZE)     // 0x01000000 - 16,777,216 bytes
+#define LARGE_SIZE_TOTAL            (LARGE_SIZE_BYTES * BITMAP_TOTAL_SIZE)      // 0x01000000 - 16,777,216 bytes
 
 // Let's keep track of where we last saw free memory to speed up scans
 
@@ -271,4 +271,37 @@ void *allocate(uint16 size) {
     zero_memory(address, size);
 
     return address;
+}
+
+void reallocate(void **ptr, uint16 size) {
+    // First figure out if it already fits (original size was less than the block, or we had to borrow a bigger block)
+
+    uint16 current;
+
+    if (size <= SMALL_SIZE_BYTES) {
+        current = SMALL_SIZE_BYTES;
+    } else if (size <= MEDIUM_SIZE_BYTES) {
+        current = MEDIUM_SIZE_BYTES;
+    } else if (size <= LARGE_SIZE_BYTES) {
+        current = LARGE_SIZE_BYTES;
+    } else {
+        panic_bad_pointer(*ptr);
+    }
+
+    if (size <= current)
+        return;             // Already fits
+
+    // Ok, we'll allocate what they want
+
+    void *result = allocate(size);
+
+    // Copy the full block since we don't know much they were using
+
+    copy_memory(*ptr, result, current);
+
+    // Free the old memory, and update the pointer
+
+    free(ptr);
+
+    *ptr = result;
 }

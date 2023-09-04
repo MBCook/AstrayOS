@@ -16,6 +16,46 @@ static __attribute__((__noreturn__)) void panic_string_out_of_range() {
     while (true) {};
 }
 
+static void output_unsigned_integer(uint8 **buffer, uint64 number, uint16 * buffer_index, uint16 *buffer_size) {
+    // Let's count up how many digits we'll need
+
+    uint8 needed = 0;
+
+    for (uint64 working = number; working > 0; working = working / 10)
+        needed++;
+
+    if (needed == 0)
+        needed = 1;     // The number was 0, we still need to show the zero
+
+    // Allocate a buffer we can use as a stack of digits
+
+    uint8 *stack = allocate(needed);
+
+    uint64 working = number;
+
+    for (uint8 i = 0; i < needed; i++) {
+        stack[i] = working % 10 + '0';
+        working = working / 10;
+    }
+
+    // Make sure that will fit in our destination
+
+    if (*buffer_index + needed >= *buffer_size) {
+        // Double the buffer size
+
+        *buffer_size = *buffer_size * 2;
+        reallocate((void **) buffer, *buffer_size);
+    }
+
+    // Now we can copy our digits into the buffer
+
+    for (uint8 i = needed; i > 0; i--) {
+        (*buffer)[(*buffer_index)++] = stack[i - 1];
+    }
+
+    free((void **) &stack);
+}
+
 // Functions
 
 string *empty_string(uint16 length) {
@@ -41,20 +81,9 @@ void expand_string(string **str, uint16 length) {
     if (length <= (*str)->size - 2)
         return;
 
-    // We're assuming the existing memory allocation wasn't big enough to hold length.
-    // If it was big enough then we're wasting cycles.
+    // Reallocate memory (it knows if the block is big enough
 
-    string *longer = empty_string(length);
-
-    longer->size = (*str)->size;
-
-    copy_string(*str, 0, length, longer, 0);
-
-    // Free the existing string, we don't need it any more, update the str pointer
-
-    free((void **) str);
-
-    *str = longer;
+    reallocate((void **) str, length + 2);
 }
 
 string *string_from_cstring(char data[]) {
@@ -136,4 +165,101 @@ void copy_string(string *src, uint16 src_start, uint16 length, string *dest, uin
     // Copy the requested data across
 
     copy_memory((void *) ((uint64) &src->data + src_start), (void *) ((uint64) &dest->data + dest_start), length);
+}
+
+string *format_string(string *format_string, ...) {
+    __builtin_va_list arguments;
+    __builtin_va_start(arguments, format_string);
+
+    // Setup a buffer we can work in. We'll start with our minimum allocate size for simplicity.
+
+    uint16 buffer_size = MINIMUM_ALLOCATION_BYTES;
+    uint16 buffer_index = 2;                // Buffer will become a string, reserve space for the size field
+
+    // Make working with out place in the format easy
+
+    uint8 *format = (uint8 *) &format_string->data;
+    uint16 format_index = 0;
+
+    // The buffer we're working in
+
+    uint8 *buffer = allocate(buffer_size);
+
+    while(format_index < format_string->size - 2) {
+        // Ensure the buffer is big enough
+
+        if (buffer_index + 1 >= buffer_size) {
+            // Double the buffer size
+
+            buffer_size = buffer_size * 2;
+            reallocate((void **) &buffer, buffer_size);
+        }
+
+        // See what character is next
+
+        if (format[format_index] != '%') {
+            // It's normal, copy straight across
+            buffer[buffer_index++] = format[format_index++];
+        } else {
+            // We're doing a format string, so get the next character
+
+            format_index += 1;  // To eat up the % sign used for escaping format specifiers
+
+            uint8 specifier = format[format_index++];
+
+            if (specifier == '%') {
+                // Just an escaped percent sign, stick it in the buffer
+
+                buffer[buffer_index++] = '%';
+            } else if (specifier == 'c') {
+                // Just a character, it too goes straight in
+
+                int thing = __builtin_va_arg(arguments, int);
+
+                buffer[buffer_index++] = (char) thing;
+            } else if (specifier == 'u') {
+                // Integer, non-negative
+
+                uint64 number = __builtin_va_arg(arguments, uint64);
+
+                output_unsigned_integer(&buffer, number, &buffer_index, &buffer_size);
+            } else if (specifier == 'd') {
+                // 32 bit integer, possibly-negative
+
+                int64 number = __builtin_va_arg(arguments, int32);
+
+                if (number < 0) {
+                    buffer[buffer_index++] = '-';
+                    number = 0 - number;
+                }
+
+                output_unsigned_integer(&buffer, (uint64) number, &buffer_index, &buffer_size);
+            } else if (specifier == 'D') {
+                // 64 bit integer, possibly-negative
+
+                int64 number = __builtin_va_arg(arguments, int64);
+
+                if (number < 0) {
+                    buffer[buffer_index++] = '-';
+                    number = 0 - number;
+                }
+
+                output_unsigned_integer(&buffer, (uint64) number, &buffer_index, &buffer_size);
+            } else if (specifier == 'x') {
+                // TODO
+            } else if (specifier == 'b') {
+                // TODO
+            } else if (specifier == 's') {
+              // TODO
+            }
+        }
+    }
+
+    // We're done, return the now correct buffer
+
+    __builtin_va_end(arguments);
+
+    ((string *) buffer)->size = buffer_index;
+
+    return (string *) buffer;
 }
