@@ -56,6 +56,24 @@ static void output_unsigned_integer(uint8 **buffer, uint64 number, uint16 * buff
     free((void **) &stack);
 }
 
+static uint8 bytes_to_display(uint64 number) {
+    // Figure out how many bytes to show as hex or binary
+
+    if (number >> 32 > 0) {
+        // Something in the top 32 bits (out of 64) set, so 8 bytes
+        return 8;
+    } else if (number >> 16 > 0) {
+        // Something in the next 16 bits (top two bytes of 32) set, so 4 bytes
+        return 4;
+    } else if (number >> 8 > 0) {
+        // Something in the next 8 bits (top byte of 16) set, so 2 bytes
+        return 2;
+    } else {
+        // It's a byte or zero which we always show as one byte
+        return 1;
+    }
+}
+
 // Functions
 
 string *empty_string(uint16 length) {
@@ -246,13 +264,54 @@ string *format_string(string *format_string, ...) {
 
                 output_unsigned_integer(&buffer, (uint64) number, &buffer_index, &buffer_size);
             } else if (specifier == 'x') {
-                // TODO
+                uint64 number = __builtin_va_arg(arguments, uint64);
+                uint8 bytes = bytes_to_display(number);
+
+                uint8 chars = 2 + bytes * 2;     // Two characters for 0x, two for each byte (one per nibble)
+
+                if (buffer_index + chars > buffer_size) {
+                    // Double the buffer size
+                    buffer_size = buffer_size * 2;
+                    reallocate((void **) &buffer, buffer_size);
+                }
+
+                buffer[buffer_index++] = '0';
+                buffer[buffer_index++] = 'x';
+
+                // Convert each byte in order, high to low
+                for (int b = bytes - 1; b >= 0; b--) {
+                    uint8 byte = (uint8) (number >> 8 * b);     // Get the byte we care about
+                    uint8 highNibble = byte >> 4;
+                    uint8 lowNibble = byte & 0x0F;
+                    buffer[buffer_index++] = highNibble + '0' + (highNibble > 9 ? 7 : 0);   // 7 adjusts '9' + 1 -> 'A'
+                    buffer[buffer_index++] = lowNibble + '0' + (lowNibble > 9 ? 7 : 0);
+                }
             } else if (specifier == 'b') {
-                // TODO
+                uint64 number = __builtin_va_arg(arguments, uint64);
+                uint8 bytes = bytes_to_display(number);
+
+                uint8 chars = 2 + bytes * 8;    // Two characters for 0b, one for each bit
+
+                if (buffer_index + chars > buffer_size) {
+                    // Double the buffer size
+                    buffer_size = buffer_size * 2;
+                    reallocate((void **) &buffer, buffer_size);
+                }
+
+                buffer[buffer_index++] = '0';
+                buffer[buffer_index++] = 'b';
+
+                // Convert each byte in order, high to low
+                for (int b = bytes - 1; b >= 0; b--) {
+                    uint8 byte = (uint8) (number >> 8 * b);     // Get the byte we care about
+
+                    for (int bit = 7; bit >= 0; bit--)
+                        buffer[buffer_index++] = ((byte & (1 << bit)) >> bit) + '0';
+                }
             } else if (specifier == 's') {
                  string *s = __builtin_va_arg(arguments, void *);
 
-                 while (s->size + buffer_index - 2 > buffer_size) {
+                 while (s->size - 2 + buffer_index > buffer_size) {
                     // Double the buffer size until it's big enough (while loop in case the string is HUGE)
                     buffer_size = buffer_size * 2;
                     reallocate((void **) &buffer, buffer_size);
