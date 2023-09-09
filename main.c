@@ -12,10 +12,11 @@ void main() {
 
     uart_send_char('|');
 
-    string *one = string_from_cstring("abc132 %c%% %d, %d, %D, %D");
-    string *two = format_string(one, 'r', 4, -4, 8589934592, -8589934592);
+    string *one = string_from_cstring("abc132 %c%% %d, %d, %D, %D, >%s< abc123");
+    string *two = string_from_cstring("<- this is fun and long enough to force an allocation ->");
+    string *three = format_string(one, 'r', 4, -4, 8589934592, -8589934592, two);
 
-    uart_send_string(two);
+    uart_send_string(three);
 
     uart_send_char('|');
     uart_send_char('\n');

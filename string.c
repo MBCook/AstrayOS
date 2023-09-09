@@ -250,7 +250,17 @@ string *format_string(string *format_string, ...) {
             } else if (specifier == 'b') {
                 // TODO
             } else if (specifier == 's') {
-              // TODO
+                 string *s = __builtin_va_arg(arguments, void *);
+
+                 while (s->size + buffer_index - 2 > buffer_size) {
+                    // Double the buffer size until it's big enough (while loop in case the string is HUGE)
+                    buffer_size = buffer_size * 2;
+                    reallocate((void **) &buffer, buffer_size);
+                 }
+
+                 copy_string(s, 0, s->size - 2, (string *) buffer, buffer_index - 2);
+
+                 buffer_index += s->size - 2;
             }
         }
     }
