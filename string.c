@@ -10,8 +10,26 @@ static __attribute__((__noreturn__)) void panic_string_too_big() {
     while (true) {};
 }
 
+static __attribute__((__noreturn__)) void panic_source_string_too_short() {
+    uart_send_string(string_from_cstring("Source string wasn't long enough"));
+
+    while (true) {};
+}
+
 static __attribute__((__noreturn__)) void panic_string_out_of_range() {
     uart_send_string(string_from_cstring("Destination string wasn't big enough"));
+
+    while (true) {};
+}
+
+static __attribute__((__noreturn__)) void panic_unexpected_character_in_number() {
+    uart_send_string(string_from_cstring("Unexpected character in number"));
+
+    while (true) {};
+}
+
+static __attribute__((__noreturn__)) void panic_negative_number_not_expected() {
+    uart_send_string(string_from_cstring("Negative number wasn't expected here"));
 
     while (true) {};
 }
@@ -72,6 +90,74 @@ static uint8 bytes_to_display(uint64 number) {
         // It's a byte or zero which we always show as one byte
         return 1;
     }
+}
+
+static uint64 parse_hex(string *src, uint16 start, uint16 *next) {
+    uint64 number = 0;
+
+    for (uint16 next = start; next < src->size - 2; next++) {
+        char c = src->data[next];
+
+        if (c > 'F' && c <= 'Z')
+            panic_unexpected_character_in_number();     // No upper case
+        else if (c > 'f' && c <= 'z')
+            panic_unexpected_character_in_number();     // No lower case
+        else if (!((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9')))
+            break;                                      // Control or punctuation, so we're done
+
+        c &= 0xDF;              // Remove the lower case bit, if it was set
+        c -= '0';               // Turn it into 0-16 (with 10-16 being off due to ASCII
+
+        if (c > 9)
+            c -= 7;             // Turn 'A' - '0' (17) into 10 so the hex digits are right
+
+        number <<= 4;
+        number += c;
+    }
+
+    return number;
+}
+
+static uint64 parse_binary(string *src, uint16 start, uint16 *next) {
+    uint64 number = 0;
+
+    for (uint16 next = start; next < src->size - 2; next++) {
+        char c = src->data[next];
+
+        if (c >= 'A' && c <= 'Z')
+            panic_unexpected_character_in_number();     // No upper case
+        else if (c >= 'a' && c <= 'z')
+            panic_unexpected_character_in_number();     // No lower case
+        else if (c >= '2' && c <= '9')
+            panic_unexpected_character_in_number();     // No digits besides 0/1
+        else if (!(c == '0' || c == '1'))
+            break;                                      // Control or punctuation, so we're done
+
+        number <<= 1;
+        number += c - '0';
+    }
+
+    return number;
+}
+
+static uint64 parse_integer(string *src, uint16 start, uint16 *next) {
+    uint64 number = 0;
+
+    for (uint16 next = start; next < src->size - 2; next++) {
+        char c = src->data[next];
+
+        if (c >= 'A' && c <= 'Z')
+            panic_unexpected_character_in_number();     // No upper case
+        else if (c >= 'a' && c <= 'z')
+            panic_unexpected_character_in_number();     // No lower case
+        else if (!(c >= '0' || c <= '9'))
+            break;                                      // Control or punctuation, so we're done
+
+        number *= 10;
+        number += c - '0';
+    }
+
+    return number;
 }
 
 // Functions
@@ -163,7 +249,7 @@ string *substring(string *src, uint16 start, uint16 length) {
     if (length >= 0xFFFF - 2)
         panic_string_too_big();
 
-    // Allocate it and copy the requsted data in
+    // Allocate it and copy the requested data in
 
     string *result = empty_string(length + 2);
 
@@ -331,4 +417,36 @@ string *format_string(string *format_string, ...) {
     ((string *) buffer)->size = buffer_index;
 
     return (string *) buffer;
+}
+
+// Parse a signed number (binary, hex, or integer)
+uint64 parse_number(string *src, uint16 start, bool *negative, uint16 *next) {
+    if (negative != null)
+        *negative = false;
+
+    if (src->size - 2 > start + 2 &&
+        src->data[start] == '0' &&
+        src->data[start + 1] == 'x') {
+
+        return parse_hex(src, start + 2, next);
+    } else if (src->size - 2 > start + 2 &&
+               src->data[start] == '0' &&
+               src->data[start + 1] == 'b') {
+        return parse_binary(src, start + 2, next);
+    } else {
+        bool hasMinus = src->data[start] == '-';
+
+        if (negative == null && hasMinus) {
+            panic_negative_number_not_expected();
+        } else if (hasMinus) {
+            if (src->size <= start + 2 + 1)
+                panic_source_string_too_short();
+
+            *negative = true;
+
+            return (uint64) ((int64) -1 * (int64) parse_integer(src, start + 1, next));
+        } else {
+            return parse_integer(src, start, next);
+        }
+    }
 }

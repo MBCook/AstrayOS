@@ -29,6 +29,9 @@ string *substring(string *src, uint16 start, uint16 length);
 // Copies selected bytes from one string to the other starting at the given destination position
 void copy_string(string *src, uint16 src_start, uint16 length, string *dest, uint16 dest_start);
 
+// Parse a number (binary, hex, or possibly negative integer), return if it was negative and next character after num
+uint64 parse_number(string *src, uint16 start, bool *negative, uint16 *next);
+
 // Create a new string from the given format string and arguments
 //
 // We can't tell a positive 32-bit int with the high bit set from a negative 32-bit int
